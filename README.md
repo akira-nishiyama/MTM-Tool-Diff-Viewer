@@ -33,3 +33,7 @@ Then load `old.tm7` as `Base` and `new.tm7` as `Target`.
 ## Limitations
 
 Threat Modeling Tool versions and templates can store model details differently. The current parser is tuned for `.tm7` files that contain a `ThreatInstances` section with `KeyValueOfstringThreat...` entries.
+
+## License
+
+This project is licensed under the Apache License, Version 2.0. See `LICENSE` for details.
