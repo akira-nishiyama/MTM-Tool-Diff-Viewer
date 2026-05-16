@@ -380,6 +380,16 @@ h1 {
   background: #f0fdf4;
 }
 
+.diff-highlight {
+  background: #fecaca;
+  border-radius: 3px;
+  box-decoration-break: clone;
+  color: #7f1d1d;
+  font-weight: 700;
+  padding: 0 2px;
+  -webkit-box-decoration-break: clone;
+}
+
 @media (max-width: 860px) {
   .app-header,
   .toolbar {

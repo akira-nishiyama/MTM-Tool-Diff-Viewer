@@ -597,8 +597,119 @@ function renderDetails(diff) {
   diff.propertyDiffs.forEach(property => {
     const row = els.propertyRowTemplate.content.firstElementChild.cloneNode(true);
     row.querySelector(".property-key").textContent = property.key;
-    row.querySelector(".before").textContent = property.before || " ";
-    row.querySelector(".after").textContent = property.after || " ";
+    renderValueDiff(row.querySelector(".before"), property.before, property.after);
+    renderValueDiff(row.querySelector(".after"), property.after, property.before);
     els.propertyDiffs.append(row);
   });
+}
+
+function renderValueDiff(element, value, comparisonValue) {
+  element.replaceChildren();
+  const text = value || "";
+  if (!text) {
+    element.textContent = " ";
+    return;
+  }
+
+  const comparisonText = comparisonValue || "";
+  if (text === comparisonText) {
+    element.textContent = text;
+    return;
+  }
+
+  getChangedTokenRuns(text, comparisonText).forEach(run => {
+    const node = document.createTextNode(run.text);
+    if (!run.changed) {
+      element.append(node);
+      return;
+    }
+
+    const highlight = document.createElement("span");
+    highlight.className = "diff-highlight";
+    highlight.append(node);
+    element.append(highlight);
+  });
+}
+
+function getChangedTokenRuns(text, comparisonText) {
+  const tokens = tokenizeForDiff(text);
+  const comparisonTokens = tokenizeForDiff(comparisonText);
+  if (!tokens.length) return [];
+
+  const unchanged = findUnchangedTokenIndexes(tokens, comparisonTokens);
+  const runs = [];
+  tokens.forEach((token, index) => {
+    const changed = !unchanged.has(index);
+    const last = runs[runs.length - 1];
+    if (last && last.changed === changed) {
+      last.text += token;
+    } else {
+      runs.push({ text: token, changed });
+    }
+  });
+  return runs;
+}
+
+function tokenizeForDiff(text) {
+  return String(text).match(/\s+|[A-Za-z0-9_:-]+|[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]|[^\sA-Za-z0-9_:-]/gu) || [];
+}
+
+function findUnchangedTokenIndexes(tokens, comparisonTokens) {
+  if (!comparisonTokens.length) return new Set();
+  const cellCount = tokens.length * comparisonTokens.length;
+  if (cellCount > 40000) {
+    return findUnchangedTokenIndexesByEdges(tokens, comparisonTokens);
+  }
+
+  const rows = tokens.length + 1;
+  const cols = comparisonTokens.length + 1;
+  const table = Array.from({ length: rows }, () => Array(cols).fill(0));
+
+  for (let row = tokens.length - 1; row >= 0; row -= 1) {
+    for (let col = comparisonTokens.length - 1; col >= 0; col -= 1) {
+      table[row][col] = tokens[row] === comparisonTokens[col]
+        ? table[row + 1][col + 1] + 1
+        : Math.max(table[row + 1][col], table[row][col + 1]);
+    }
+  }
+
+  const unchanged = new Set();
+  let row = 0;
+  let col = 0;
+  while (row < tokens.length && col < comparisonTokens.length) {
+    if (tokens[row] === comparisonTokens[col]) {
+      unchanged.add(row);
+      row += 1;
+      col += 1;
+    } else if (table[row + 1][col] >= table[row][col + 1]) {
+      row += 1;
+    } else {
+      col += 1;
+    }
+  }
+  return unchanged;
+}
+
+function findUnchangedTokenIndexesByEdges(tokens, comparisonTokens) {
+  const unchanged = new Set();
+  let start = 0;
+  while (
+    start < tokens.length &&
+    start < comparisonTokens.length &&
+    tokens[start] === comparisonTokens[start]
+  ) {
+    unchanged.add(start);
+    start += 1;
+  }
+
+  let end = 0;
+  while (
+    end < tokens.length - start &&
+    end < comparisonTokens.length - start &&
+    tokens[tokens.length - 1 - end] === comparisonTokens[comparisonTokens.length - 1 - end]
+  ) {
+    unchanged.add(tokens.length - 1 - end);
+    end += 1;
+  }
+  return unchanged;
 }

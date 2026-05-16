@@ -92,6 +92,8 @@ The UI is a two-pane reviewer:
 - Left pane: scrollable threat list sorted by numeric threat ID.
 - Right pane: scrollable field comparison for the selected threat.
 
+Changed text segments inside old and new field values are highlighted in red so reviewers can spot the precise text-level difference without rereading the whole value.
+
 Empty-state panels are hidden after files are loaded or after a threat is selected.
 
 ## XML Handling
